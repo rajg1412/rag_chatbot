@@ -47,12 +47,12 @@ export function AuthForm() {
 
                     if (!profile) {
                         console.log('Profile missing, creating manually...')
-                        is_admin = user.email === 'rajg50103@gmail.com'
                         await supabase.from('profiles').insert({
                             id: user.id,
                             email: user.email,
-                            is_admin: is_admin
+                            is_admin: false // Default to false, must be updated in DB
                         })
+                        is_admin = false
                     }
 
                     if (is_admin) {

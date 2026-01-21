@@ -29,16 +29,9 @@ export function Navbar() {
 
                 if (error) {
                     console.error('Profile fetch error:', error)
-                } else if (!profile && user.email === 'rajg50103@gmail.com') {
-                    // Profile doesn't exist yet
-                    console.warn('Profile row missing for admin email')
                 }
 
                 setIsAdmin(!!profile?.is_admin)
-
-                if (user.email === 'rajg50103@gmail.com' && !profile?.is_admin) {
-                    toast.warning('Admin privileges not found. Please run the Updated SQL setup in Supabase.')
-                }
             }
         }
         checkUser()
