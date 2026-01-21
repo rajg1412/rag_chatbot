@@ -37,6 +37,7 @@ export async function upsertVectors(chunks: Chunk[]) {
 
 export async function queryVectors(query: string, topK: number = 5) {
     const index = getPineconeIndex();
+    console.log(`[Pinecone] Searching for: "${query}" (topK: ${topK})`);
     const queryEmbedding = await generateEmbedding(query);
 
     const queryResponse = await index.query({
@@ -45,10 +46,13 @@ export async function queryVectors(query: string, topK: number = 5) {
         includeMetadata: true,
     });
 
+    console.log(`[Pinecone] Found ${queryResponse.matches.length} matches.`);
+
     return queryResponse.matches.map((match) => ({
         text: match.metadata?.text as string,
         score: match.score,
         source: match.metadata?.source as string,
+        pageRange: match.metadata?.pageRange as string,
     }));
 }
 
