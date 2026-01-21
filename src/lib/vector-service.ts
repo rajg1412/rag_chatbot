@@ -51,3 +51,20 @@ export async function queryVectors(query: string, topK: number = 5) {
         source: match.metadata?.source as string,
     }));
 }
+
+export async function deleteVectorsBySource(source: string) {
+    const index = getPineconeIndex();
+    // In Pinecone, we can delete by metadata filtering if using serverless index
+    // Or we can delete by ID prefix if we follow a convention.
+    // Given the current implementation uses `${filename}-${index}` as ID, we can't easily delete by prefix if filename changes.
+    // However, Pinecone supports deleting by filter.
+    try {
+        await index.deleteMany({
+            source: { "$eq": source }
+        });
+        console.log(`[Pinecone] Deleted vectors for source: ${source}`);
+    } catch (error) {
+        console.error(`[Pinecone] Error deleting vectors:`, error);
+        // We don't want to fail the whole deletion if Pinecone deletion fails
+    }
+}

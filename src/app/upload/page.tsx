@@ -4,9 +4,21 @@ import { getIsAdmin } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 
 export default async function UploadPage() {
-    const isAdmin = await getIsAdmin()
+    const { createClient } = await import('@/lib/supabase/server')
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!isAdmin) {
+    if (!user) {
+        redirect('/login')
+    }
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .maybeSingle()
+
+    if (!profile?.is_admin) {
         redirect('/chat')
     }
 

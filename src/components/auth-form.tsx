@@ -39,21 +39,28 @@ export function AuthForm() {
                 if (user) {
                     const { data: profile } = await supabase
                         .from('profiles')
-                        .select('id')
+                        .select('id, is_admin')
                         .eq('id', user.id)
                         .maybeSingle()
 
+                    let is_admin = profile?.is_admin
+
                     if (!profile) {
                         console.log('Profile missing, creating manually...')
+                        is_admin = user.email === 'rajg50103@gmail.com'
                         await supabase.from('profiles').insert({
                             id: user.id,
                             email: user.email,
-                            is_admin: user.email === 'rajg50103@gmail.com'
+                            is_admin: is_admin
                         })
                     }
-                }
 
-                router.push('/chat')
+                    if (is_admin) {
+                        router.push('/upload')
+                    } else {
+                        router.push('/chat')
+                    }
+                }
                 router.refresh()
             }
         } catch (error: any) {

@@ -77,6 +77,29 @@ export function DocumentList() {
         }
     }
 
+    const handleDelete = async (docId: string, docName: string) => {
+        if (!confirm(`Are you sure you want to delete "${docName}"? This will remove it from storage and search index.`)) {
+            return
+        }
+
+        try {
+            const res = await fetch(`/api/documents?id=${docId}`, {
+                method: 'DELETE',
+            })
+
+            const data = await res.json()
+            if (res.ok) {
+                toast.success('Document deleted successfully')
+                setDocuments(prev => prev.filter(d => d.id !== docId))
+            } else {
+                toast.error(data.error || 'Failed to delete document')
+            }
+        } catch (error) {
+            console.error('Delete error:', error)
+            toast.error('Failed to delete document')
+        }
+    }
+
     if (loading) {
         return (
             <div className="flex items-center justify-center p-8">
@@ -174,6 +197,34 @@ export function DocumentList() {
                                     </div>
                                 </DialogContent>
                             </Dialog>
+
+                            <button
+                                onClick={() => handleDelete(doc.id, doc.name)}
+                                title="Delete Document"
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #fee2e2',
+                                    backgroundColor: 'transparent',
+                                    color: '#dc2626',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#fef2f2';
+                                    e.currentTarget.style.borderColor = '#fecaca';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.borderColor = '#fee2e2';
+                                }}
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
                 ))}
