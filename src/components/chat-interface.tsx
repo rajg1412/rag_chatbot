@@ -5,13 +5,19 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card } from '@/components/ui/card'
-import { Send, Bot, User, Loader2, Info } from 'lucide-react'
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import { Send, Bot, User, Loader2, Info, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Message {
     role: 'user' | 'assistant'
     content: string
-    sources?: string[]
+    sources?: { name: string, snippet: string }[]
 }
 
 export function ChatInterface() {
@@ -23,6 +29,8 @@ export function ChatInterface() {
     ])
     const [input, setInput] = useState('')
     const [loading, setLoading] = useState(false)
+    const [selectedDoc, setSelectedDoc] = useState<{ name: string, text: string } | null>(null)
+    const [isViewerOpen, setIsViewerOpen] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     const scrollToBottom = () => {
@@ -67,11 +75,16 @@ export function ChatInterface() {
         }
     }
 
+    const handleViewSource = (source: { name: string, snippet: string }) => {
+        setSelectedDoc({ name: source.name, text: source.snippet })
+        setIsViewerOpen(true)
+    }
+
     return (
-        <div className="flex flex-col h-[calc(100-theme(spacing.16))] h-[80vh] w-full max-w-4xl mx-auto mt-4 p-4">
-            <Card className="flex-1 flex flex-col overflow-hidden bg-white shadow-xl border-t-0 rounded-t-none">
-                <ScrollArea className="flex-1 p-4">
-                    <div className="space-y-4">
+        <div className="flex flex-col h-[650px] md:h-[750px] w-full max-w-4xl mx-auto mt-4 px-4 overflow-hidden">
+            <Card className="flex-1 flex flex-col overflow-hidden bg-white shadow-xl border rounded-lg relative">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                    <div className="p-6 space-y-4">
                         {messages.map((msg, i) => (
                             <div
                                 key={i}
@@ -79,7 +92,7 @@ export function ChatInterface() {
                                     }`}
                             >
                                 <div
-                                    className={`flex max-w-[80%] gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+                                    className={`flex max-w-[85%] md:max-w-[75%] gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
                                         }`}
                                 >
                                     <div
@@ -90,7 +103,7 @@ export function ChatInterface() {
                                     </div>
                                     <div className="space-y-2">
                                         <div
-                                            className={`rounded-lg px-4 py-2 text-sm shadow-sm ${msg.role === 'user'
+                                            className={`rounded-lg px-4 py-2 text-sm shadow-sm whitespace-pre-wrap break-words ${msg.role === 'user'
                                                 ? 'bg-primary text-white'
                                                 : 'bg-gray-100 text-gray-800'
                                                 }`}
@@ -102,13 +115,15 @@ export function ChatInterface() {
                                                 <span className="text-[10px] text-gray-400 uppercase font-bold flex items-center gap-1">
                                                     <Info size={10} /> Sources:
                                                 </span>
-                                                {Array.from(new Set(msg.sources)).map((source, idx) => (
-                                                    <span
+                                                {msg.sources.map((source, idx) => (
+                                                    <button
                                                         key={idx}
-                                                        className="bg-gray-200 text-gray-600 text-[10px] px-1.5 py-0.5 rounded"
+                                                        onClick={() => handleViewSource(source)}
+                                                        className="bg-gray-200 hover:bg-gray-300 text-gray-600 text-[10px] px-1.5 py-0.5 rounded transition-colors flex items-center gap-1"
                                                     >
-                                                        {source}
-                                                    </span>
+                                                        <Eye size={10} />
+                                                        {source.name}
+                                                    </button>
                                                 ))}
                                             </div>
                                         )}
@@ -116,7 +131,6 @@ export function ChatInterface() {
                                 </div>
                             </div>
                         ))}
-                        <div ref={messagesEndRef} />
                         {loading && (
                             <div className="flex justify-start">
                                 <div className="flex max-w-[80%] gap-3 flex-row">
@@ -125,13 +139,14 @@ export function ChatInterface() {
                                     </div>
                                     <div className="bg-gray-100 rounded-lg px-4 py-2 text-sm text-gray-800 flex items-center">
                                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                        Searching knowledge base...
+                                        Thinking...
                                     </div>
                                 </div>
                             </div>
                         )}
+                        <div ref={messagesEndRef} />
                     </div>
-                </ScrollArea>
+                </div>
 
                 <div className="p-4 border-t bg-gray-50">
                     <form
@@ -154,6 +169,21 @@ export function ChatInterface() {
                     </form>
                 </div>
             </Card>
+
+            <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
+                <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle className="flex justify-between items-center">
+                            <span>Source: {selectedDoc?.name}</span>
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 mt-4 p-4 border rounded-md bg-muted/50 overflow-y-auto">
+                        <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed">
+                            {selectedDoc?.text}
+                        </pre>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

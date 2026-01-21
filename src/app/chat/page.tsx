@@ -11,11 +11,13 @@ export default async function ChatPage() {
     }
 
     return (
-        <div className="container mx-auto py-6">
-            <h1 className="text-3xl font-bold text-center mb-4">RAG Assistant</h1>
-            <p className="text-center text-gray-500 mb-8">
-                Ask anything about your uploaded documents.
-            </p>
+        <div className="flex flex-col items-center min-h-screen p-4 md:p-8 bg-gray-50/50">
+            <div className="w-full max-w-4xl text-center mb-6">
+                <h1 className="text-3xl font-bold tracking-tight">RAG Assistant</h1>
+                <p className="text-muted-foreground mt-2">
+                    Expert document analysis at your fingertips.
+                </p>
+            </div>
             <ChatInterface />
         </div>
     )

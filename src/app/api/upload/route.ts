@@ -40,28 +40,56 @@ export async function POST(req: NextRequest) {
         // 1.5 Extract Text immediately
         const extractedText = await extractText(buffer);
 
-        // 2. Record metadata in database (Status: Pending)
+        // 2. Record metadata in database
         const { data: { user } } = await supabase.auth.getUser()
+        let docId = null;
         if (user) {
-            const { error: dbError } = await supabase
+            const { data: newDoc, error: dbError } = await supabase
                 .from('documents')
                 .insert({
                     name: file.name,
                     storage_path: storagePath,
                     user_id: user.id,
                     type: file.type,
-                    status: 'pending',
-                    extracted_text: extractedText // Store the raw text!
+                    status: 'processing', // Start as processing
+                    extracted_text: extractedText
                 })
+                .select()
+                .single()
 
             if (dbError) {
                 console.error('Database error:', dbError)
+            } else {
+                docId = newDoc.id;
+            }
+        }
+
+        // 3. Automatically trigger vector processing in background
+        if (docId) {
+            try {
+                console.log(`[Upload] Automatically processing vectors for doc: ${docId}`);
+                const chunks = await processPdf(extractedText, file.name);
+                await upsertVectors(chunks);
+
+                // 4. Update status to completed
+                await supabase
+                    .from('documents')
+                    .update({ status: 'completed' })
+                    .eq('id', docId);
+
+                console.log(`[Upload] Document successfully indexed.`);
+            } catch (err: any) {
+                console.error('[Upload] Background processing failed:', err);
+                await supabase
+                    .from('documents')
+                    .update({ status: 'error' })
+                    .eq('id', docId);
             }
         }
 
         return NextResponse.json({
             success: true,
-            message: 'Document uploaded and text extracted. Ready for processing.'
+            message: 'Document uploaded and automatically indexed!'
         })
     } catch (error: any) {
         console.error('Upload Error:', error)

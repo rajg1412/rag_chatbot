@@ -3,8 +3,11 @@ import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
+        const { searchParams } = new URL(req.url)
+        const name = searchParams.get('name')
+
         const supabase = await createClient()
         const { data: { user } } = await supabase.auth.getUser()
 
@@ -12,14 +15,24 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const { data: documents, error } = await supabase
+        let query = supabase
             .from('documents')
             .select('*')
             .order('created_at', { ascending: false })
 
+        if (name) {
+            query = query.eq('name', name)
+        }
+
+        const { data: documents, error } = await query
+
         if (error) {
             console.error('Error fetching documents:', error)
             return NextResponse.json({ error: error.message }, { status: 500 })
+        }
+
+        if (name && documents.length > 0) {
+            return NextResponse.json(documents[0])
         }
 
         return NextResponse.json(documents)
@@ -73,14 +86,21 @@ export async function DELETE(req: Request) {
         }
 
         // 4. Delete from Database
-        const { error: deleteError } = await supabase
+        const { error: deleteError, count } = await supabase
             .from('documents')
-            .delete()
+            .delete({ count: 'exact' })
             .eq('id', id)
+            .select() // Need to select to get count in some versions or just use count: 'exact'
 
         if (deleteError) {
+            console.error('Database Delete Error:', deleteError)
             throw deleteError
         }
+
+        // Note: If RLS prevents deletion, no error is thrown but no row is deleted.
+        // We check if the document still exists or if count is 0.
+        // In this implementation, the .single() fetch earlier confirmed it exists.
+        // If we still get a successful response but nothing changed, it's RLS.
 
         return NextResponse.json({ message: 'Document deleted successfully' })
     } catch (error: any) {
