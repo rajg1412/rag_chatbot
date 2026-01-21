@@ -50,7 +50,7 @@ export function AuthForm() {
                         await supabase.from('profiles').insert({
                             id: user.id,
                             email: user.email,
-                            is_admin: false // Default to false, must be updated in DB
+                            is_admin: false 
                         })
                         is_admin = false
                     }
