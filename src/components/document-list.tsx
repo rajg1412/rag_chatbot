@@ -60,13 +60,14 @@ export function DocumentList() {
                 body: JSON.stringify({ documentId: docId })
             })
 
-            const data = await res.json()
+            const data = await res.json().catch(() => ({ error: 'Invalid server response' }))
             if (res.ok) {
                 toast.success('Processing complete! Document is now searchable.')
                 fetchDocuments() // Refresh list
             } else {
                 console.error('Processing failed:', data);
-                toast.error(data.error || 'Processing failed');
+                const errorMessage = data.error || data.message || (typeof data === 'string' ? data : 'Internal Server Error');
+                toast.error(`Processing failed: ${errorMessage}`);
                 if (data.tip) {
                     toast.info(`Tip: ${data.tip}`);
                 }

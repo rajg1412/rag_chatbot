@@ -11,13 +11,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import { Send, Bot, User, Loader2, Info, Eye } from 'lucide-react'
+import { Send, Bot, User, Loader2, Info, Eye, X, CheckCircle2, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface Message {
     role: 'user' | 'assistant'
     content: string
     sources?: { name: string, snippet: string }[]
+    attempts?: number
 }
 
 export function ChatInterface() {
@@ -66,6 +69,7 @@ export function ChatInterface() {
                 role: 'assistant',
                 content: data.answer,
                 sources: data.sources,
+                attempts: data.attempts,
             }
             setMessages((prev) => [...prev, assistantMessage])
         } catch (error: any) {
@@ -81,48 +85,64 @@ export function ChatInterface() {
     }
 
     return (
-        <div className="flex flex-col h-[650px] md:h-[750px] w-full max-w-4xl mx-auto mt-4 px-4 overflow-hidden">
-            <Card className="flex-1 flex flex-col overflow-hidden bg-white shadow-xl border rounded-lg relative">
-                <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
-                    <div className="p-6 space-y-4">
+        <div className="flex flex-col h-[700px] md:h-[800px] w-full max-w-5xl mx-auto mt-2 px-4 overflow-hidden relative">
+            {/* Decorative Background Elements */}
+            <div className="absolute inset-0 -z-10 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-40"></div>
+
+            <Card className="flex-1 flex flex-col overflow-hidden bg-white/70 backdrop-blur-xl shadow-2xl border-white/50 rounded-2xl relative overflow-hidden">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-slate-50/30">
+                    <div className="p-8 space-y-8">
                         {messages.map((msg, i) => (
                             <div
                                 key={i}
-                                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'
-                                    }`}
+                                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-500`}
                             >
                                 <div
-                                    className={`flex max-w-[85%] md:max-w-[75%] gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
-                                        }`}
+                                    className={`flex max-w-[85%] md:max-w-[80%] gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                                 >
                                     <div
-                                        className={`flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-md border shadow ${msg.role === 'user' ? 'bg-primary text-white' : 'bg-white'
-                                            }`}
+                                        className={`flex h-10 w-10 shrink-0 select-none items-center justify-center rounded-xl shadow-md border ${msg.role === 'user'
+                                            ? 'bg-primary text-white border-primary/20'
+                                            : 'bg-white text-primary border-gray-100'}`}
                                     >
-                                        {msg.role === 'user' ? <User size={18} /> : <Bot size={18} />}
+                                        {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className={`space-y-3 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                                         <div
-                                            className={`rounded-lg px-4 py-2 text-sm shadow-sm whitespace-pre-wrap break-words ${msg.role === 'user'
-                                                ? 'bg-primary text-white'
-                                                : 'bg-gray-100 text-gray-800'
-                                                }`}
+                                            className={`rounded-2xl px-5 py-3 text-sm shadow-sm whitespace-pre-wrap break-words leading-relaxed ${msg.role === 'user'
+                                                ? 'bg-primary text-white rounded-tr-none'
+                                                : 'bg-white border border-gray-100 text-gray-800 rounded-tl-none'}`}
                                         >
                                             {msg.content}
                                         </div>
+
+                                        {msg.role === 'assistant' && msg.attempts && (
+                                            <div className="flex items-center gap-2">
+                                                {msg.attempts <= 3 ? (
+                                                    <div className="flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100 uppercase tracking-tighter">
+                                                        <CheckCircle2 size={10} /> Verified {msg.attempts}
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 uppercase tracking-tighter">
+                                                        <XCircle size={10} /> Unverified ({msg.attempts})
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
                                         {msg.sources && msg.sources.length > 0 && (
-                                            <div className="flex flex-wrap gap-1 mt-1">
-                                                <span className="text-[10px] text-gray-400 uppercase font-bold flex items-center gap-1">
-                                                    <Info size={10} /> Sources:
-                                                </span>
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                                <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-100/50 rounded-md text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                                    <Info size={11} /> Sources
+                                                </div>
                                                 {msg.sources.map((source, idx) => (
                                                     <button
                                                         key={idx}
                                                         onClick={() => handleViewSource(source)}
-                                                        className="bg-gray-200 hover:bg-gray-300 text-gray-600 text-[10px] px-1.5 py-0.5 rounded transition-colors flex items-center gap-1"
+                                                        className="group bg-white hover:bg-primary/5 text-gray-600 border border-gray-100 text-[11px] px-3 py-1 rounded-full transition-all flex items-center gap-2 shadow-sm hover:shadow hover:border-primary/20"
                                                     >
-                                                        <Eye size={10} />
-                                                        {source.name}
+                                                        <Eye size={12} className="text-gray-400 group-hover:text-primary transition-colors" />
+                                                        <span className="font-medium">{source.name}</span>
                                                     </button>
                                                 ))}
                                             </div>
@@ -132,13 +152,13 @@ export function ChatInterface() {
                             </div>
                         ))}
                         {loading && (
-                            <div className="flex justify-start">
-                                <div className="flex max-w-[80%] gap-3 flex-row">
-                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border shadow bg-white">
-                                        <Bot size={18} />
+                            <div className="flex justify-start animate-pulse">
+                                <div className="flex max-w-[80%] gap-4 flex-row">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-white shadow-sm">
+                                        <Bot size={20} className="text-primary/50" />
                                     </div>
-                                    <div className="bg-gray-100 rounded-lg px-4 py-2 text-sm text-gray-800 flex items-center">
-                                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                    <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-none px-6 py-3 text-sm text-gray-500 flex items-center shadow-sm">
+                                        <Loader2 className="w-4 h-4 animate-spin mr-3 text-primary" />
                                         Thinking...
                                     </div>
                                 </div>
@@ -148,22 +168,26 @@ export function ChatInterface() {
                     </div>
                 </div>
 
-                <div className="p-4 border-t bg-gray-50">
+                <div className="p-6 border-t bg-white/50 backdrop-blur-md">
                     <form
                         onSubmit={(e) => {
                             e.preventDefault()
                             handleSend()
                         }}
-                        className="flex gap-2"
+                        className="flex gap-3 relative max-w-4xl mx-auto"
                     >
                         <Input
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Ask a question about your documents..."
-                            className="flex-1"
+                            placeholder="Type your question here..."
+                            className="flex-1 h-12 bg-white border-gray-200 focus-visible:ring-primary/20 rounded-xl pr-14 shadow-inner transition-all hover:border-gray-300"
                             disabled={loading}
                         />
-                        <Button type="submit" disabled={loading || !input.trim()}>
+                        <Button
+                            type="submit"
+                            disabled={loading || !input.trim()}
+                            className="absolute right-1 top-1 h-10 w-10 rounded-lg p-0 shadow-lg hover:shadow-primary/25 transition-all active:scale-95"
+                        >
                             <Send size={18} />
                         </Button>
                     </form>
@@ -177,10 +201,12 @@ export function ChatInterface() {
                             <span>Source: {selectedDoc?.name}</span>
                         </DialogTitle>
                     </DialogHeader>
-                    <div className="flex-1 mt-4 p-4 border rounded-md bg-muted/50 overflow-y-auto">
-                        <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed">
-                            {selectedDoc?.text}
-                        </pre>
+                    <div className="flex-1 mt-4 p-6 border rounded-md bg-white overflow-y-auto">
+                        <div className="prose prose-sm max-w-none text-gray-800 leading-relaxed">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {selectedDoc?.text || ''}
+                            </ReactMarkdown>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>

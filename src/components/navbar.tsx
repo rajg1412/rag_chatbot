@@ -62,31 +62,53 @@ export function Navbar() {
     if (!user) return null
 
     return (
-        <nav className="border-b bg-white">
-            <div className="container mx-auto flex h-16 items-center justify-between px-4">
-                <div className="flex items-center gap-8">
-                    <Link href="/" className="text-xl font-bold text-primary">
-                        RAG Document
+        <nav className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md transition-all">
+            <div className="container mx-auto flex h-16 items-center justify-between px-6">
+                <div className="flex items-center gap-10">
+                    <Link href="/" className="group flex items-center gap-2">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-lg transition-transform group-hover:scale-105 group-hover:rotate-3">
+                            <FileText className="h-6 w-6" />
+                        </div>
+                        <span className="text-xl font-bold tracking-tight text-primary transition-colors hover:text-primary/80">
+                            RAG Document
+                        </span>
                     </Link>
-                    <div className="flex gap-4">
-                        <Link href="/chat" className="text-sm font-medium hover:text-primary">
+                    <div className="flex items-center gap-1">
+                        <Link
+                            href="/chat"
+                            className="px-4 py-2 text-sm font-medium text-gray-600 rounded-full transition-all hover:bg-primary/5 hover:text-primary"
+                        >
                             Chat
                         </Link>
                         {isAdmin && (
-                            <Link href="/upload" className="text-sm font-medium hover:text-primary">
-                                Upload
+                            <Link
+                                href="/upload"
+                                className="px-4 py-2 text-sm font-medium text-gray-600 rounded-full transition-all hover:bg-primary/5 hover:text-primary"
+                            >
+                                Dashboard
                             </Link>
                         )}
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-500">{user.email}</span>
-                    <Button variant="outline" size="sm" onClick={handleLogout}>
-                        Logout
+                <div className="flex items-center gap-6">
+                    <div className="hidden md:flex flex-col items-end">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Signed in as</span>
+                        <span className="text-sm font-medium text-primary">{user.email}</span>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleLogout}
+                        className="rounded-full px-5 font-semibold text-red-500 hover:bg-red-50 hover:text-red-600"
+                    >
+                        Sign Out
                     </Button>
                 </div>
             </div>
         </nav>
     )
 }
+
+import { FileText } from 'lucide-react'
+

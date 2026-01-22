@@ -40,12 +40,14 @@ export async function generateChatResponse(message: string) {
                 
                 RESPONSE FORMAT:
                 [ANSWER]
-                (Your grounded answer)
+                (Your grounded answer in Markdown formatting)
                 [/ANSWER]
 
                 [CITED_SOURCES]
-                - Source: "FileName", Page: "PageRange", Snippet: "Directly used text"
-                [/CITED_SOURCES]`
+                - Source: "FileName", Snippet: "Directly used text"
+                [/CITED_SOURCES]
+                
+                IMPORTANT: Do NOT include "Page Number", "Token Count", or "Approximate range" in the Source or anywhere else. Just the FileName.`
             }]
         },
         history: [],
@@ -160,16 +162,18 @@ export async function generateChatResponse(message: string) {
 
             const sourceName = content.match(/Source:\s*"([^"]+)"/)?.[1];
             const pageRange = content.match(/Page:\s*"([^"]+)"/)?.[1];
-            const snippet = content.match(/Snippet:\s*"([^"]+)"/)?.[1];
+            const snippet = (content.match(/Snippet:\s*"([^"]+)"/)?.[1] || "").replace(/\\n/g, '\n');
 
-            const displayName = sourceName + (pageRange ? ` (Page: ${pageRange})` : '');
-            return sourceName ? { name: displayName, snippet: snippet || "" } : null;
+            const displayName = sourceName;
+            // + (pageRange ? ` (Page: ${pageRange})` : '');
+            return sourceName ? { name: displayName, snippet: snippet } : null;
         })
         .filter((s: { name: string, snippet: string } | null): s is { name: string, snippet: string } => s !== null && s.name !== "");
 
     return {
         answer: answer,
         sources: finalSources,
+        attempts: iterations,
     };
 }
 

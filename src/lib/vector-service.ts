@@ -10,29 +10,39 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
 export async function upsertVectors(chunks: Chunk[]) {
     const index = getPineconeIndex();
-
     if (chunks.length === 0) return;
 
     const model = getGeminiEmbeddingModel();
+    const BATCH_SIZE = 100;
 
-    // Gemini handles batching by sending the array directly
-    const texts = chunks.map(chunk => chunk.text.replace(/\n/g, ' '));
-    const result = await model.batchEmbedContents({
-        requests: texts.map(t => ({ content: { role: 'user', parts: [{ text: t }] } }))
-    });
+    console.log(`[VectorService] Upserting ${chunks.length} chunks in batches of ${BATCH_SIZE}...`);
 
-    // 2. Map embeddings back to Pinecone format
-    const upserts = result.embeddings.map((item, idx) => ({
-        id: chunks[idx].id,
-        values: item.values,
-        metadata: {
-            ...chunks[idx].metadata,
-            text: chunks[idx].text,
-        },
-    }));
+    for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+        const batch = chunks.slice(i, i + BATCH_SIZE);
+        const texts = batch.map(chunk => chunk.text.replace(/\n/g, ' '));
 
-    // 3. Upsert to Pinecone
-    await index.upsert(upserts);
+        console.log(`[VectorService] Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(chunks.length / BATCH_SIZE)}`);
+
+        // 1. Get Embeddings for the batch
+        const result = await model.batchEmbedContents({
+            requests: texts.map(t => ({ content: { role: 'user', parts: [{ text: t }] } }))
+        });
+
+        // 2. Map to Pinecone format
+        const upserts = result.embeddings.map((item, idx) => ({
+            id: batch[idx].id,
+            values: item.values,
+            metadata: {
+                ...batch[idx].metadata,
+                text: batch[idx].text,
+            },
+        }));
+
+        // 3. Upsert batch to Pinecone
+        await index.upsert(upserts);
+    }
+
+    console.log(`[VectorService] Successfully upserted all chunks.`);
 }
 
 export async function queryVectors(query: string, topK: number = 5) {
